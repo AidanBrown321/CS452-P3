@@ -8,6 +8,7 @@
 #endif
 #include "harness/unity.h"
 #include "../src/lab.h"
+#include <string.h>
 
 
 void setUp(void) {
@@ -198,7 +199,7 @@ void test_buddy_init(void)
      memset(ptrs[i], i+1, sizes[i]);
    }
    
-   // Verify contents to ensure no overlapping occurred
+   // Verify that no overlapping occurred
    for (int i = 0; i < 5; i++) {
      unsigned char *bytes = (unsigned char *)ptrs[i];
      for (size_t j = 0; j < sizes[i]; j++) {
@@ -227,21 +228,21 @@ void test_buddy_init(void)
    buddy_init(&pool, pool_size);
    
    // Allocate multiple small blocks that should come from the same large block
-   // We'll allocate 8 blocks of 1KB each
+   // allocating 8 blocks of 1KB each
    void* blocks[8];
    for (int i = 0; i < 8; i++) {
      blocks[i] = buddy_malloc(&pool, 1024);
      assert(blocks[i] != NULL);
      
-     // Mark the memory so we can identify it
+     // Mark the memory so we are able to identify it
      memset(blocks[i], 0xAA, 1024);
    }
    
-   // Free the blocks in an order that should trigger coalescing
+   // Free the blocks in an order that makes them coalesce
    // Free blocks 0,1 (should coalesce)
    // Then 2,3 (should coalesce)
    // Then the coalesced 0+1 and 2+3 (should coalesce again)
-   // And so on
+   // And this should continue until all blocks are freed
    buddy_free(&pool, blocks[0]);
    buddy_free(&pool, blocks[1]);
    buddy_free(&pool, blocks[2]);
@@ -281,7 +282,7 @@ void test_buddy_init(void)
    // Free the pointer properly now
    buddy_free(&pool, ptr);
    
-   // Attempt double-free (should be handled gracefully)
+   // Attempt double-free (shouldn't cause an error but should be handled)
    buddy_free(&pool, ptr);
    
    check_buddy_pool_full(&pool);
